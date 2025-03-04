@@ -1,0 +1,42 @@
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - main
+      - karsajobs-ui
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: Lint Dockerfile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Hadolint
+        run: |
+          wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x /usr/local/bin/hadolint
+
+      - name: Run Hadolint
+        run: hadolint Dockerfile
+
+  build-and-push:
+    name: Build & Push Docker Image
+    needs: [lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build & Push Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/karsajobs-ui:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/karsajobs-ui:latest
